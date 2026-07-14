@@ -7,7 +7,6 @@ import { AdvanceReason } from '../routing/useLiveNavigation';
 interface TurnBannerProps {
   target: Waypoint | null;
   distanceMeters: number | null;
-  isComplete: boolean;
   permissionDenied: boolean;
   lastAdvanceReason: AdvanceReason | null;
 }
@@ -15,7 +14,6 @@ interface TurnBannerProps {
 export default function TurnBanner({
   target,
   distanceMeters,
-  isComplete,
   permissionDenied,
   lastAdvanceReason,
 }: TurnBannerProps) {
@@ -24,8 +22,6 @@ export default function TurnBanner({
 
   if (permissionDenied) {
     message = 'Turn on location access to get directions to each stop.';
-  } else if (isComplete) {
-    message = "You've reached the end of the cruise.";
   } else if (!target) {
     message = 'Finding your location…';
   } else if (distanceMeters === null) {
@@ -35,8 +31,8 @@ export default function TurnBanner({
   }
 
   return (
-    <View style={[styles.banner, rerouted && !isComplete && styles.rerouted]}>
-      {rerouted && !isComplete && (
+    <View style={[styles.banner, rerouted && styles.rerouted]}>
+      {rerouted && (
         <Text style={styles.rerouteLabel}>Missed a turn — heading to next stop</Text>
       )}
       <Text style={styles.text}>{message}</Text>

@@ -10,6 +10,7 @@ import { prefetchRouteCorridor } from '../maps/offlineTilePrefetch';
 import OnlineMapProvider from '../maps/OnlineMapProvider';
 import OfflineMapProvider from '../maps/OfflineMapProvider';
 import TurnBanner from './TurnBanner';
+import CruiseCompleteScreen from './CruiseCompleteScreen';
 
 interface MapScreenProps {
   route: Route;
@@ -67,6 +68,10 @@ export default function MapScreen({ route }: MapScreenProps) {
     });
   }, []);
 
+  if (isComplete) {
+    return <CruiseCompleteScreen route={route} />;
+  }
+
   return (
     <View style={styles.container}>
       {isOffline ? (
@@ -85,7 +90,6 @@ export default function MapScreen({ route }: MapScreenProps) {
       <TurnBanner
         target={target}
         distanceMeters={distanceToTargetMeters}
-        isComplete={isComplete}
         permissionDenied={permissionDenied}
         lastAdvanceReason={lastAdvanceReason}
       />
