@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   Map,
@@ -6,7 +6,6 @@ import {
   Marker,
   GeoJSONSource,
   Layer,
-  type CameraRef,
   type LngLatBounds,
 } from '@maplibre/maplibre-react-native';
 import { Waypoint } from '../routing/routeModel';
@@ -35,27 +34,16 @@ export default function OfflineMapProvider({
   displayPath,
   currentPosition,
 }: OfflineMapProviderProps) {
-  const cameraRef = useRef<CameraRef>(null);
-  const [mapReady, setMapReady] = useState(false);
-
-  useEffect(() => {
-    if (!mapReady) {
-      return;
-    }
+  const bounds: LngLatBounds = useMemo(() => {
     const lats = waypoints.map(w => w.lat);
     const lngs = waypoints.map(w => w.lng);
-    const bounds: LngLatBounds = [
+    return [
       Math.min(...lngs),
       Math.min(...lats),
       Math.max(...lngs),
       Math.max(...lats),
     ];
-    cameraRef.current?.fitBounds(
-      bounds,
-      { padding: { top: 80, right: 80, bottom: 80, left: 80 } },
-      500,
-    );
-  }, [mapReady, waypoints]);
+  }, [waypoints]);
 
   const lineGeoJSON = {
     type: 'Feature' as const,
@@ -67,35 +55,40 @@ export default function OfflineMapProvider({
   };
 
   return (
-    <Map
-      style={styles.map}
-      mapStyle={osmStyleSpec}
-      onDidFinishLoadingMap={() => setMapReady(true)}>
-      <Camera ref={cameraRef} />
-      <GeoJSONSource id="route-source" data={lineGeoJSON} />
-      <Layer
-        id="route-line"
-        type="line"
-        source="route-source"
-        style={{ lineColor: '#1a73e8', lineWidth: 4 }}
-      />
-      {waypoints.map(w => (
-        <Marker key={w.sequence} lngLat={[w.lng, w.lat]}>
-          <View
-            style={[styles.pin, { backgroundColor: markerColor(w.type) }]}
-          />
-        </Marker>
-      ))}
-      {currentPosition && (
-        <Marker lngLat={[currentPosition.lng, currentPosition.lat]}>
-          <View style={styles.userDot} />
-        </Marker>
-      )}
-    </Map>
+    <View style={styles.container}>
+      <Map style={styles.map} mapStyle={osmStyleSpec}>
+        <Camera
+          bounds={bounds}
+          padding={{ top: 80, right: 80, bottom: 80, left: 80 }}
+        />
+        <GeoJSONSource id="route-source" data={lineGeoJSON} />
+        <Layer
+          id="route-line"
+          type="line"
+          source="route-source"
+          style={{ lineColor: '#1a73e8', lineWidth: 4 }}
+        />
+        {waypoints.map(w => (
+          <Marker key={w.sequence} lngLat={[w.lng, w.lat]}>
+            <View
+              style={[styles.pin, { backgroundColor: markerColor(w.type) }]}
+            />
+          </Marker>
+        ))}
+        {currentPosition && (
+          <Marker lngLat={[currentPosition.lng, currentPosition.lat]}>
+            <View style={styles.userDot} />
+          </Marker>
+        )}
+      </Map>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   map: {
     flex: 1,
   },

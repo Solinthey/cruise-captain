@@ -6,7 +6,9 @@ import { osmStyleUrl } from './osmStyle';
 // latitudes), so the corridor covers a bit either side of the road, not just
 // the exact waypoint coordinates.
 const CORRIDOR_PADDING_DEGREES = 0.05;
-const MIN_ZOOM = 8;
+// Country-level zooms (below ~11) are wasted tiles for a driving route —
+// keep the range tight to street-level detail so there's less to download.
+const MIN_ZOOM = 11;
 const MAX_ZOOM = 15;
 
 // Pre-fetches OSM tiles for the route's corridor while still online, so
@@ -20,7 +22,13 @@ export async function prefetchRouteCorridor(
   const existingPacks = await OfflineManager.getPacks();
   const alreadyDownloaded = existingPacks.some(pack => {
     try {
-      return JSON.parse(pack.metadata ?? '{}').routeId === routeId;
+      // pack.metadata is already parsed once by the OfflinePack class, but
+      // the metadata *we* passed to createPack got wrapped a second time by
+      // the native layer (alongside its own migration bookkeeping), so our
+      // routeId is under a nested, still-stringified "metadata" field.
+      const inner = pack.metadata?.metadata;
+      const ours = typeof inner === 'string' ? JSON.parse(inner) : inner;
+      return ours?.routeId === routeId;
     } catch {
       return false;
     }
