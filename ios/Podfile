@@ -8,6 +8,12 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
+# react-native-maps: use Google Maps provider (not Apple Maps) to match the
+# Android build and the architecture spec. Requires `pod install` on the Mac
+# (not runnable from this Windows machine) plus GMSServices.provideAPIKey(...)
+# in AppDelegate.swift with the iOS Maps key once that's created.
+$RNMapsUseGoogleMaps = true
+
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
