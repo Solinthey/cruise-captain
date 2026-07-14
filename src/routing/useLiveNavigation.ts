@@ -1,0 +1,116 @@
+import { useEffect, useRef, useState } from 'react';
+import { PermissionsAndroid, Platform } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
+import { Waypoint } from './routeModel';
+import { bearingDegrees, distanceMeters, LatLng } from './geo';
+
+// How close (in meters) the driver needs to get to a waypoint before we
+// consider it "reached" and advance to the next one. Not yet validated
+// against real driving — see docs/architecture-spec.md open questions.
+export const ARRIVAL_RADIUS_METERS = 50;
+
+async function ensureLocationPermission(): Promise<boolean> {
+  if (Platform.OS === 'android') {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    );
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  }
+  // iOS: @react-native-community/geolocation prompts via this call.
+  return new Promise(resolve => {
+    Geolocation.requestAuthorization(
+      () => resolve(true),
+      () => resolve(false),
+    );
+  });
+}
+
+export interface LiveNavigationState {
+  currentPosition: LatLng | null;
+  target: Waypoint | null;
+  distanceToTargetMeters: number | null;
+  bearingToTargetDegrees: number | null;
+  isComplete: boolean;
+  permissionDenied: boolean;
+}
+
+// Ordered waypoints are assumed sorted by `sequence` ascending. Guidance
+// starts at index 1 (the first turn after the start point) since the
+// participant is expected to already be at the `start` waypoint when the
+// cruise begins.
+export function useLiveNavigation(
+  orderedWaypoints: Waypoint[],
+): LiveNavigationState {
+  const [currentPosition, setCurrentPosition] = useState<LatLng | null>(null);
+  const [targetIndex, setTargetIndex] = useState(
+    orderedWaypoints.length > 1 ? 1 : 0,
+  );
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const targetIndexRef = useRef(targetIndex);
+  targetIndexRef.current = targetIndex;
+
+  useEffect(() => {
+    let watchId: number | null = null;
+    let cancelled = false;
+
+    ensureLocationPermission().then(granted => {
+      if (cancelled) {
+        return;
+      }
+      if (!granted) {
+        setPermissionDenied(true);
+        return;
+      }
+      watchId = Geolocation.watchPosition(
+        position => {
+          setCurrentPosition({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        () => {},
+        {
+          enableHighAccuracy: true,
+          distanceFilter: 5,
+          interval: 3000,
+        },
+      );
+    });
+
+    return () => {
+      cancelled = true;
+      if (watchId !== null) {
+        Geolocation.clearWatch(watchId);
+      }
+    };
+  }, []);
+
+  const target =
+    targetIndex < orderedWaypoints.length ? orderedWaypoints[targetIndex] : null;
+  const isComplete = targetIndex >= orderedWaypoints.length;
+
+  const distanceToTargetMeters =
+    currentPosition && target
+      ? distanceMeters(currentPosition, { lat: target.lat, lng: target.lng })
+      : null;
+  const bearingToTargetDegrees =
+    currentPosition && target
+      ? bearingDegrees(currentPosition, { lat: target.lat, lng: target.lng })
+      : null;
+
+  useEffect(() => {
+    if (distanceToTargetMeters !== null && distanceToTargetMeters <= ARRIVAL_RADIUS_METERS) {
+      setTargetIndex(i => Math.min(i + 1, orderedWaypoints.length));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [distanceToTargetMeters]);
+
+  return {
+    currentPosition,
+    target,
+    distanceToTargetMeters,
+    bearingToTargetDegrees,
+    isComplete,
+    permissionDenied,
+  };
+}

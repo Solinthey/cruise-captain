@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { Route } from '../routing/routeModel';
+import { useLiveNavigation } from '../routing/useLiveNavigation';
+import TurnBanner from './TurnBanner';
 
 const markerColor = (type: string) => {
   switch (type) {
@@ -25,6 +27,8 @@ export default function MapScreen({ route }: MapScreenProps) {
     () => [...route.waypoints].sort((a, b) => a.sequence - b.sequence),
     [route.waypoints],
   );
+  const { target, distanceToTargetMeters, isComplete, permissionDenied } =
+    useLiveNavigation(ordered);
 
   const initialRegion = {
     latitude: ordered[0].lat,
@@ -57,6 +61,7 @@ export default function MapScreen({ route }: MapScreenProps) {
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={initialRegion}
+        showsUserLocation={!permissionDenied}
         onMapReady={() => setMapReady(true)}>
         {ordered.map(w => (
           <Marker
@@ -72,6 +77,12 @@ export default function MapScreen({ route }: MapScreenProps) {
           strokeWidth={4}
         />
       </MapView>
+      <TurnBanner
+        target={target}
+        distanceMeters={distanceToTargetMeters}
+        isComplete={isComplete}
+        permissionDenied={permissionDenied}
+      />
     </View>
   );
 }
