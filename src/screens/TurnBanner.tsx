@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Waypoint } from '../routing/routeModel';
 import { formatDistance } from '../routing/geo';
 import { AdvanceReason } from '../routing/useLiveNavigation';
@@ -17,6 +18,7 @@ export default function TurnBanner({
   permissionDenied,
   lastAdvanceReason,
 }: TurnBannerProps) {
+  const insets = useSafeAreaInsets();
   let message: string;
   const rerouted = lastAdvanceReason === 'rerouted';
 
@@ -31,7 +33,12 @@ export default function TurnBanner({
   }
 
   return (
-    <View style={[styles.banner, rerouted && styles.rerouted]}>
+    <View
+      style={[
+        styles.banner,
+        { paddingTop: insets.top + 16 },
+        rerouted && styles.rerouted,
+      ]}>
       {rerouted && (
         <Text style={styles.rerouteLabel}>Missed a turn — heading to next stop</Text>
       )}
