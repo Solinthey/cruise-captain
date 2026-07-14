@@ -27,8 +27,13 @@ export default function MapScreen({ route }: MapScreenProps) {
     () => [...route.waypoints].sort((a, b) => a.sequence - b.sequence),
     [route.waypoints],
   );
-  const { target, distanceToTargetMeters, isComplete, permissionDenied } =
-    useLiveNavigation(ordered);
+  const {
+    target,
+    distanceToTargetMeters,
+    isComplete,
+    permissionDenied,
+    lastAdvanceReason,
+  } = useLiveNavigation(ordered);
 
   const initialRegion = {
     latitude: ordered[0].lat,
@@ -82,6 +87,7 @@ export default function MapScreen({ route }: MapScreenProps) {
         distanceMeters={distanceToTargetMeters}
         isComplete={isComplete}
         permissionDenied={permissionDenied}
+        lastAdvanceReason={lastAdvanceReason}
       />
     </View>
   );

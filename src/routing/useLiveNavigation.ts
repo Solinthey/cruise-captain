@@ -9,6 +9,13 @@ import { bearingDegrees, distanceMeters, LatLng } from './geo';
 // against real driving — see docs/architecture-spec.md open questions.
 export const ARRIVAL_RADIUS_METERS = 50;
 
+// If the driver is this much closer to the *next* waypoint than to the
+// current target, we treat the current target as missed (off-route) and
+// skip ahead to the next one rather than trying to route back to it — the
+// one custom piece of logic this app has. The margin exists so ordinary GPS
+// jitter near two closely-spaced waypoints doesn't cause a false skip.
+export const OFF_ROUTE_SKIP_MARGIN_METERS = 30;
+
 async function ensureLocationPermission(): Promise<boolean> {
   if (Platform.OS === 'android') {
     const granted = await PermissionsAndroid.request(
@@ -25,6 +32,8 @@ async function ensureLocationPermission(): Promise<boolean> {
   });
 }
 
+export type AdvanceReason = 'arrived' | 'rerouted';
+
 export interface LiveNavigationState {
   currentPosition: LatLng | null;
   target: Waypoint | null;
@@ -32,6 +41,7 @@ export interface LiveNavigationState {
   bearingToTargetDegrees: number | null;
   isComplete: boolean;
   permissionDenied: boolean;
+  lastAdvanceReason: AdvanceReason | null;
 }
 
 // Ordered waypoints are assumed sorted by `sequence` ascending. Guidance
@@ -45,9 +55,9 @@ export function useLiveNavigation(
   const [targetIndex, setTargetIndex] = useState(
     orderedWaypoints.length > 1 ? 1 : 0,
   );
+  const [lastAdvanceReason, setLastAdvanceReason] =
+    useState<AdvanceReason | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const targetIndexRef = useRef(targetIndex);
-  targetIndexRef.current = targetIndex;
 
   useEffect(() => {
     let watchId: number | null = null;
@@ -87,6 +97,10 @@ export function useLiveNavigation(
 
   const target =
     targetIndex < orderedWaypoints.length ? orderedWaypoints[targetIndex] : null;
+  const nextAfterTarget =
+    targetIndex + 1 < orderedWaypoints.length
+      ? orderedWaypoints[targetIndex + 1]
+      : null;
   const isComplete = targetIndex >= orderedWaypoints.length;
 
   const distanceToTargetMeters =
@@ -97,13 +111,32 @@ export function useLiveNavigation(
     currentPosition && target
       ? bearingDegrees(currentPosition, { lat: target.lat, lng: target.lng })
       : null;
+  const distanceToNextMeters =
+    currentPosition && nextAfterTarget
+      ? distanceMeters(currentPosition, {
+          lat: nextAfterTarget.lat,
+          lng: nextAfterTarget.lng,
+        })
+      : null;
 
   useEffect(() => {
-    if (distanceToTargetMeters !== null && distanceToTargetMeters <= ARRIVAL_RADIUS_METERS) {
+    if (distanceToTargetMeters === null) {
+      return;
+    }
+    if (distanceToTargetMeters <= ARRIVAL_RADIUS_METERS) {
       setTargetIndex(i => Math.min(i + 1, orderedWaypoints.length));
+      setLastAdvanceReason('arrived');
+      return;
+    }
+    if (
+      distanceToNextMeters !== null &&
+      distanceToNextMeters + OFF_ROUTE_SKIP_MARGIN_METERS < distanceToTargetMeters
+    ) {
+      setTargetIndex(i => Math.min(i + 1, orderedWaypoints.length));
+      setLastAdvanceReason('rerouted');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [distanceToTargetMeters]);
+  }, [distanceToTargetMeters, distanceToNextMeters]);
 
   return {
     currentPosition,
@@ -112,5 +145,6 @@ export function useLiveNavigation(
     bearingToTargetDegrees,
     isComplete,
     permissionDenied,
+    lastAdvanceReason,
   };
 }

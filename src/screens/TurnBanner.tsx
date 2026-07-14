@@ -2,12 +2,14 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Waypoint } from '../routing/routeModel';
 import { formatDistance } from '../routing/geo';
+import { AdvanceReason } from '../routing/useLiveNavigation';
 
 interface TurnBannerProps {
   target: Waypoint | null;
   distanceMeters: number | null;
   isComplete: boolean;
   permissionDenied: boolean;
+  lastAdvanceReason: AdvanceReason | null;
 }
 
 export default function TurnBanner({
@@ -15,8 +17,11 @@ export default function TurnBanner({
   distanceMeters,
   isComplete,
   permissionDenied,
+  lastAdvanceReason,
 }: TurnBannerProps) {
   let message: string;
+  const rerouted = lastAdvanceReason === 'rerouted';
+
   if (permissionDenied) {
     message = 'Turn on location access to get directions to each stop.';
   } else if (isComplete) {
@@ -30,7 +35,10 @@ export default function TurnBanner({
   }
 
   return (
-    <View style={styles.banner}>
+    <View style={[styles.banner, rerouted && !isComplete && styles.rerouted]}>
+      {rerouted && !isComplete && (
+        <Text style={styles.rerouteLabel}>Missed a turn — heading to next stop</Text>
+      )}
       <Text style={styles.text}>{message}</Text>
     </View>
   );
@@ -45,6 +53,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(30, 30, 30, 0.9)',
     paddingVertical: 16,
     paddingHorizontal: 20,
+  },
+  rerouted: {
+    backgroundColor: 'rgba(178, 58, 12, 0.92)',
+  },
+  rerouteLabel: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    opacity: 0.9,
   },
   text: {
     color: 'white',
