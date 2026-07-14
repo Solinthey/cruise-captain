@@ -23,6 +23,13 @@ In-app route creation/editing, accounts, payments, ads, multiple concurrent crui
 - Node.js, Android SDK (`%LOCALAPPDATA%\Android\Sdk`), and Android Studio (`D:\Program Files (x86)\Android\Android Studio`, JBR used as `JAVA_HOME`) are already installed/configured.
 - No Xcode on this machine (Windows) — iOS builds/testing happen via the rented Mac at rentamac.io.
 - There was an earlier, unrelated native-Android (Kotlin) prototype at `C:\Users\kelly\AndroidStudioProjects\ClubCruiseApp` — it's just the default Android Studio template with no custom code, superseded by this React Native project. Not part of this repo.
+- **Project path must not contain spaces.** The project originally lived at `C:\Users\kelly\Cruise Captain Project` and was moved to `C:\Users\kelly\CruiseCaptain` because RN's Android autolinking (`autolinkLibrariesFromCommand()` in `android/settings.gradle`) shells out to Node via `cmd` during Gradle sync, and that invocation breaks on a spaced path. Keep the project at a space-free path — this will resurface for any native module (Maps SDK, MapLibre, etc.), not just autolinking.
+- **`npx react-native run-android` doesn't work on this machine** — its bundled installer fails with `'gradlew.bat' is not recognized...` even from a space-free path (looks like an `@react-native-community/cli` process-spawning issue on Windows, unrelated to the path bug above). Workaround: build/install directly with Gradle instead:
+  ```
+  cd android
+  .\gradlew.bat app:installDebug -PreactNativeDevServerPort=8081
+  ```
+  Then start Metro separately (plain `Start-Process -FilePath npx` also fails to resolve `npx.cmd` on Windows — launch via `cmd.exe /c "npx react-native start"` instead), and `adb reverse tcp:8081 tcp:8081` before launching the app.
 
 ## Open questions (not yet decided — flag before assuming)
 

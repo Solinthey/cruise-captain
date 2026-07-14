@@ -74,5 +74,5 @@ yarn-error.log
 !.yarn/sdks
 !.yarn/versions
 
-# Claude Code local settings (machine-specific)
-.claude/settings.local.json
+# Claude Code local settings/session state (machine-specific)
+.claude/
