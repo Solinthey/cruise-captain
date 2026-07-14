@@ -39,6 +39,10 @@ In-app route creation/editing, accounts, payments, ads, multiple concurrent crui
 - **Offline tiles come straight from OpenStreetMap's public tile server** (`tile.openstreetmap.org`), which explicitly isn't meant for production app traffic at scale. Fine for dev/testing; switch to a proper provider (MapTiler, Stadia Maps, etc., all have generous free tiers) before real users are on this — just update `hosting/osm-style.json`'s tile URL (and its API key if the provider needs one).
 - **Google Maps API key has no "Application restrictions."** Confirmed by calling the Directions API directly from a non-Android machine with the key and it worked — meaning the key currently isn't locked to this app at all, it just works from anywhere. Any key embedded in a shipped app is eventually extractable from the APK regardless, so this isn't a new exposure, but it does mean a leaked key's blast radius is capped only by **"API restrictions"** on the key (in Cloud Console → Credentials), not by app identity. Before shipping: confirm "API restrictions" on the key is set to exactly the APIs in use (Maps SDK for Android, Maps SDK for iOS, Directions API) rather than "Don't restrict key" — that's the one thing actually protecting this key right now.
 
+## Deferred enhancements (nice-to-haves, not MVP-blocking)
+
+- Tap the turn banner to zoom out and see the whole route, then return to normal turn-by-turn view. Came up during real-device testing on a Pixel 9 Pro XL — worth doing, just not now.
+
 ## Open questions (not yet decided — flag before assuming)
 
 - Where route JSON gets hosted for deep links to resolve against (GitHub raw file vs. a cloud storage bucket). Currently sidestepped: the deep link itself carries the route JSON's URL (`cruisecaptain://route?url=...`), so hosting can be decided later without an app change.
