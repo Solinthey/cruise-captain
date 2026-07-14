@@ -3,6 +3,9 @@ import { StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { Route } from '../routing/routeModel';
 import { useLiveNavigation } from '../routing/useLiveNavigation';
+import { fetchRoadSnappedPath } from '../routing/directions';
+import { LatLng } from '../routing/geo';
+import { DIRECTIONS_API_KEY } from '../config/secrets';
 import TurnBanner from './TurnBanner';
 
 const markerColor = (type: string) => {
@@ -34,6 +37,27 @@ export default function MapScreen({ route }: MapScreenProps) {
     permissionDenied,
     lastAdvanceReason,
   } = useLiveNavigation(ordered);
+
+  // Road-snapped path for display only — guidance logic still uses the raw
+  // waypoints (see useLiveNavigation). Falls back to straight lines between
+  // waypoints if the Directions API call fails for any reason.
+  const [displayPath, setDisplayPath] = useState<LatLng[]>(ordered);
+  useEffect(() => {
+    let cancelled = false;
+    setDisplayPath(ordered);
+    fetchRoadSnappedPath(ordered, DIRECTIONS_API_KEY)
+      .then(path => {
+        if (!cancelled) {
+          setDisplayPath(path);
+        }
+      })
+      .catch(() => {
+        // Keep the straight-line fallback already set above.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ordered]);
 
   const initialRegion = {
     latitude: ordered[0].lat,
@@ -77,7 +101,10 @@ export default function MapScreen({ route }: MapScreenProps) {
           />
         ))}
         <Polyline
-          coordinates={ordered.map(w => ({ latitude: w.lat, longitude: w.lng }))}
+          coordinates={displayPath.map(p => ({
+            latitude: p.lat,
+            longitude: p.lng,
+          }))}
           strokeColor="#1a73e8"
           strokeWidth={4}
         />

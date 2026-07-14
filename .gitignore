@@ -76,3 +76,7 @@ yarn-error.log
 
 # Claude Code local settings/session state (machine-specific)
 .claude/
+
+# API keys used directly from JS (Android/iOS-side keys live in
+# android/local.properties, already ignored above)
+src/config/secrets.ts
