@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   Map,
@@ -6,11 +6,13 @@ import {
   Marker,
   GeoJSONSource,
   Layer,
+  type CameraRef,
   type LngLatBounds,
 } from '@maplibre/maplibre-react-native';
 import { Waypoint } from '../routing/routeModel';
 import { LatLng } from '../routing/geo';
 import { osmStyleSpec } from './osmStyle';
+import RecenterButton from './RecenterButton';
 
 const markerColor = (type: string) => {
   switch (type) {
@@ -34,6 +36,7 @@ export default function OfflineMapProvider({
   displayPath,
   currentPosition,
 }: OfflineMapProviderProps) {
+  const cameraRef = useRef<CameraRef>(null);
   const bounds: LngLatBounds = useMemo(() => {
     const lats = waypoints.map(w => w.lat);
     const lngs = waypoints.map(w => w.lng);
@@ -58,6 +61,7 @@ export default function OfflineMapProvider({
     <View style={styles.container}>
       <Map style={styles.map} mapStyle={osmStyleSpec}>
         <Camera
+          ref={cameraRef}
           bounds={bounds}
           padding={{ top: 80, right: 80, bottom: 80, left: 80 }}
         />
@@ -81,6 +85,16 @@ export default function OfflineMapProvider({
           </Marker>
         )}
       </Map>
+      {currentPosition && (
+        <RecenterButton
+          onPress={() =>
+            cameraRef.current?.flyTo({
+              center: [currentPosition.lng, currentPosition.lat],
+              duration: 400,
+            })
+          }
+        />
+      )}
     </View>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import KeepAwake from '@sayem314/react-native-keep-awake';
 import NetInfo from '@react-native-community/netinfo';
 import { Route } from '../routing/routeModel';
 import { useLiveNavigation } from '../routing/useLiveNavigation';
@@ -74,6 +75,7 @@ export default function MapScreen({ route }: MapScreenProps) {
 
   return (
     <View style={styles.container}>
+      <KeepAwake />
       {isOffline ? (
         <OfflineMapProvider
           waypoints={ordered}
@@ -84,6 +86,7 @@ export default function MapScreen({ route }: MapScreenProps) {
         <OnlineMapProvider
           waypoints={ordered}
           displayPath={displayPath}
+          currentPosition={currentPosition}
           permissionDenied={permissionDenied}
         />
       )}
