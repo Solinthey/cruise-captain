@@ -82,7 +82,7 @@ export function useLiveNavigation(
         {
           enableHighAccuracy: true,
           distanceFilter: 5,
-          interval: 3000,
+          interval: 1000,
         },
       );
     });
