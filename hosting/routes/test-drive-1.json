@@ -1,0 +1,42 @@
+{
+  "routeId": "test-drive-1",
+  "name": "Test Drive Route 1",
+  "createdAt": "2026-07-14T00:00:00Z",
+  "waypoints": [
+    {
+      "sequence": 0,
+      "label": "Start — 6600 NE Duniway Rd",
+      "lat": 45.2632458,
+      "lng": -123.0921807,
+      "type": "start"
+    },
+    {
+      "sequence": 1,
+      "label": "Turn right onto Kreder Rd.",
+      "lat": 45.2378114,
+      "lng": -123.0825222,
+      "type": "waypoint"
+    },
+    {
+      "sequence": 2,
+      "label": "Turn right onto Fletcher Rd.",
+      "lat": 45.2211528,
+      "lng": -123.0960129,
+      "type": "waypoint"
+    },
+    {
+      "sequence": 3,
+      "label": "Turn left onto Monroe St.",
+      "lat": 45.2432506,
+      "lng": -123.1109274,
+      "type": "waypoint"
+    },
+    {
+      "sequence": 99,
+      "label": "Finish — 6600 NE Duniway Rd",
+      "lat": 45.2632279,
+      "lng": -123.0926259,
+      "type": "end"
+    }
+  ]
+}
