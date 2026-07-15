@@ -1,18 +1,40 @@
 import { LatLng } from './geo';
 import { decodePolyline } from './polyline';
 
-// Fetches a road-snapped path through the given waypoints, for display only —
-// turn-by-turn guidance still uses straight-line distance/bearing (see
-// useLiveNavigation). Falls through to the caller's straight-line fallback
-// if the request fails for any reason (missing/invalid key, no network,
-// Directions API not enabled yet, etc.) — this is a visual nicety, not
-// something the app depends on to function.
-export async function fetchRoadSnappedPath(
+export interface TurnStep {
+  instruction: string;
+  distanceMeters: number;
+  end: LatLng;
+}
+
+export interface RoadSnappedRoute {
+  path: LatLng[];
+  steps: TurnStep[];
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+}
+
+// Fetches a road-snapped path through the given waypoints, plus Google's own
+// turn-by-turn steps within it (e.g. "Turn right onto Stoller Rd") — both
+// for display only. Guidance's *advancement* logic (arrival, off-route
+// skip-ahead) still uses the raw waypoints (see useLiveNavigation); this is
+// a separate, finer-grained layer just for what the banner displays while
+// online. Falls through to the caller's straight-line fallback if the
+// request fails for any reason (missing/invalid key, no network, Directions
+// API not enabled yet, etc.) — this is a visual nicety, not something the
+// app depends on to function.
+export async function fetchRoadSnappedRoute(
   waypoints: LatLng[],
   apiKey: string,
-): Promise<LatLng[]> {
+): Promise<RoadSnappedRoute> {
   if (waypoints.length < 2) {
-    return waypoints;
+    return { path: waypoints, steps: [] };
   }
 
   const origin = waypoints[0];
@@ -40,8 +62,21 @@ export async function fetchRoadSnappedPath(
     throw new Error(`Directions request failed (${response.status})`);
   }
   const data = await response.json();
-  if (data.status !== 'OK' || !data.routes?.[0]?.overview_polyline?.points) {
+  const route = data.routes?.[0];
+  if (data.status !== 'OK' || !route?.overview_polyline?.points) {
     throw new Error(`Directions API returned status ${data.status}`);
   }
-  return decodePolyline(data.routes[0].overview_polyline.points);
+
+  const steps: TurnStep[] = (route.legs ?? []).flatMap((leg: any) =>
+    (leg.steps ?? []).map((step: any) => ({
+      instruction: stripHtml(step.html_instructions ?? ''),
+      distanceMeters: step.distance?.value ?? 0,
+      end: { lat: step.end_location.lat, lng: step.end_location.lng },
+    })),
+  );
+
+  return {
+    path: decodePolyline(route.overview_polyline.points),
+    steps,
+  };
 }

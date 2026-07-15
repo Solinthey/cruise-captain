@@ -1,19 +1,18 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Waypoint } from '../routing/routeModel';
 import { formatDistance } from '../routing/geo';
 import { AdvanceReason } from '../routing/useLiveNavigation';
 
 interface TurnBannerProps {
-  target: Waypoint | null;
+  label: string | null;
   distanceMeters: number | null;
   permissionDenied: boolean;
   lastAdvanceReason: AdvanceReason | null;
 }
 
 export default function TurnBanner({
-  target,
+  label,
   distanceMeters,
   permissionDenied,
   lastAdvanceReason,
@@ -24,12 +23,12 @@ export default function TurnBanner({
 
   if (permissionDenied) {
     message = 'Turn on location access to get directions to each stop.';
-  } else if (!target) {
+  } else if (!label) {
     message = 'Finding your location…';
   } else if (distanceMeters === null) {
-    message = `Next: ${target.label}`;
+    message = `Next: ${label}`;
   } else {
-    message = `${formatDistance(distanceMeters)} — ${target.label}`;
+    message = `${formatDistance(distanceMeters)} — ${label}`;
   }
 
   return (
